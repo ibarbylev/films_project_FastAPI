@@ -35,6 +35,11 @@ films/
 ```bash
 pip install fastapi uvicorn[standard] jinja2 python-multipart
 ```
+или
+
+```bash
+pip install -r requirements.txt
+```
 
 ### Запуск проекта в строке терминала
 
