@@ -129,7 +129,7 @@ def films_by_genre(request: Request, genre: str, page: int = 1):
     pagination = paginate(filtered_films, page)
 
     return templates.TemplateResponse(
-        "keyword.html",
+        "genre.html",
         {
             "request": request,
             "title": f"Genre: {genre}",

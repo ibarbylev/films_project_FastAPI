@@ -14,7 +14,7 @@
 
 ```
 films/
-├── app.py
+├── main.py
 ├── data/
 │   ├── films.json
 │   └── statistics.json
