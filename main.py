@@ -22,8 +22,8 @@ STATS_FILE = DATA_DIR / "statistics.json"
 PER_PAGE = 10  # количество фильмов на странице
 
 # ==============================
-# Учебная переменная для хранения отфильтрованных фильмов
-# Используется для однопользовательского режима
+# Учебная переменная для хранения отфильтрованных фильмов.
+# Используется ТОЛЬКО для одно-пользовательского режима
 # ==============================
 filtered_films: list[dict] = []
 
@@ -78,6 +78,14 @@ def paginate(items: list[dict], page: int, per_page: int = PER_PAGE) -> dict:
         "offset": start,
     }
 
+def get_genres() -> list[str]:
+    """
+    Функция возвращает список жанров
+    """
+    films = load_json(FILMS_FILE)
+    genres_list = sorted({film["genre"] for film in films})
+    return genres_list
+
 
 # ==============================
 # Эндпойнты
@@ -93,21 +101,21 @@ def home(request: Request):
         {"request": request, "title": "Home"},
     )
 
+# -------------------------
+# Выбор жанров
+# -------------------------
 
 @app.get("/genres", response_class=HTMLResponse)
 def genres(request: Request):
     """
     Страница со списком жанров всех фильмов.
     """
-    films = load_json(FILMS_FILE)
-    genres_list = sorted({film["genre"] for film in films})
-
     return templates.TemplateResponse(
         "genres.html",
         {
             "request": request,
             "title": "Genres",
-            "genres": genres_list,
+            "genres": get_genres(),
         },
     )
 
@@ -142,6 +150,9 @@ def films_by_genre(request: Request, genre: str, page: int = 1):
         },
     )
 
+# -------------------------
+# Поиск по ключевым словам
+# -------------------------
 
 @app.post("/search/keyword", response_class=HTMLResponse)
 def keyword_search(keyword: str = Form(...)):
@@ -180,6 +191,9 @@ def keyword_form(request: Request, page: int = 1):
         },
     )
 
+# -------------------------
+# Поиск по диапазону лет
+# -------------------------
 
 @app.post("/search/year")
 def year_form_submit(year_from: int = Form(...), year_to: int = Form(...)):
@@ -206,6 +220,62 @@ def year_search(request: Request, page: int = 1):
         "year.html",
         {
             "request": request,
+            "items": pagination["items"],
+            "columns": ["title", "description", "genre", "year"],
+            "page": pagination["page"],
+            "has_prev": pagination["has_prev"],
+            "has_next": pagination["has_next"],
+            "offset": pagination["offset"],
+        },
+    )
+
+# -------------------------
+# Поиск по жанру и диапазону лет
+# -------------------------
+
+@app.post("/search/genre_year")
+def genre_year_form_submit(genre: str = Form(...), year_from: int = Form(...), year_to: int = Form(...)):
+    """
+    POST-эндпойнт поиска фильмов по году выпуска.
+    Сохраняет результат в глобальную переменную filtered_films.
+    Делает редирект на GET-эндпойнт для отображения с пагинацией.
+    """
+    global filtered_films
+    films = load_json(FILMS_FILE)
+    filtered_films = [
+        f for f in films
+        if year_from <= f["year"] <= year_to and f["genre"] == genre
+    ]
+
+    return RedirectResponse(
+        url=f"/search/genre_year?genre={genre}&year_from={year_from}&year_to={year_to}",
+        status_code=303
+    )
+
+
+@app.get("/search/genre_year", response_class=HTMLResponse)
+def genre_year_search(
+        request: Request,
+        page: int = 1,
+        genre: str | None = None,
+        year_from: int = 1900,
+        year_to: int = 2025,
+):
+    """
+    GET-эндпойнт отображения результатов поиска по жанру и годам с пагинацией.
+    """
+    pagination = paginate(filtered_films, page)
+
+    return templates.TemplateResponse(
+        "genre_year.html",
+        {
+            "request": request,
+            # проставляем предыдущий выбор в текущую форму
+            "selected_genre": genre,
+            "year_from": year_from,
+            "year_to": year_to,
+
+            "genres": get_genres(),
             "items": pagination["items"],
             "columns": ["title", "description", "genre", "year"],
             "page": pagination["page"],
