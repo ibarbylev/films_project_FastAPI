@@ -270,11 +270,6 @@ def genre_year_search(
         "genre_year.html",
         {
             "request": request,
-            # проставляем предыдущий выбор в текущую форму
-            "selected_genre": genre,
-            "year_from": year_from,
-            "year_to": year_to,
-
             "genres": get_genres(),
             "items": pagination["items"],
             "columns": ["title", "description", "genre", "year"],
@@ -282,6 +277,11 @@ def genre_year_search(
             "has_prev": pagination["has_prev"],
             "has_next": pagination["has_next"],
             "offset": pagination["offset"],
+
+            # подставляем предыдущий POST-выбор в текущую GET-форму
+            "selected_genre": genre,
+            "year_from": year_from,
+            "year_to": year_to,
         },
     )
 
